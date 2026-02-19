@@ -1,0 +1,2488 @@
+<!DOCTYPE html>
+<html lang="ru">
+<!--
+  ╔══════════════════════════════════════════════════════════════════════════════╗
+  ║           EUROFIGHTER TYPHOON EF-2000 — ИНТЕРАКТИВНЫЙ САЙТ                 ║
+  ║           EUROFIGHTER TYPHOON EF-2000 — INTERACTIVE WEBSITE                ║
+  ║                                                                              ║
+  ║  Автор / Author: Generated for educational purposes                         ║
+  ║  Версия / Version: 2.0                                                       ║
+  ║                                                                              ║
+  ║  ФУНКЦИИ / FEATURES:                                                        ║
+  ║  - 3D wireframe модель самолёта (интерактивное вращение)                    ║
+  ║  - 3D wireframe aircraft model (interactive rotation)                       ║
+  ║  - Мультиязычный интерфейс (RU / EN / DE / FR)                              ║
+  ║  - Multilanguage interface (RU / EN / DE / FR)                               ║
+  ║  - Таблица ТТХ с конкурентами / Competitor specs comparison                 ║
+  ║  - Радарные диаграммы / Radar charts                                        ║
+  ║  - Оружейная система / Weapons system overview                              ║
+  ╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EUROFIGHTER TYPHOON — AESA</title>
+
+  <!--
+    ШРИФТЫ / FONTS
+    Orbitron     — военно-технический заголовочный шрифт / military-tech display font
+    Share Tech Mono — моноширинный для данных / monospaced for data/HUD
+    Rajdhani     — основной текстовый / body text
+  -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       CSS ПЕРЕМЕННЫЕ / CSS CUSTOM PROPERTIES
+       Централизованная палитра цветов и отступов сайта
+       Centralized color palette and spacing for the whole site
+       ══════════════════════════════════════════════════════════════ */
+    :root {
+      --amber:      #ffb800;   /* Основной акцентный / Main accent */
+      --amber-dim:  #cc9200;   /* Приглушённый акцент / Dimmed accent */
+      --orange:     #ff6b00;   /* Вторичный акцент / Secondary accent */
+      --dark:       #050810;   /* Фон страницы / Page background */
+      --darker:     #020408;   /* Самый тёмный / Darkest */
+      --mid:        #0a1020;   /* Средний фон / Mid background */
+      --surface:    #0d1828;   /* Поверхность карточек / Card surface */
+      --border:     rgba(255,184,0,0.18); /* Граница элементов / Element border */
+      --glow:       rgba(255,184,0,0.08); /* Свечение / Glow */
+      --text:       #c8d8f0;   /* Основной текст / Main text */
+      --text-dim:   #4a6080;   /* Приглушённый текст / Dimmed text */
+
+      /* Цвета самолётов для сравнения / Aircraft comparison colors */
+      --c-typhoon: #ffb800;
+      --c-f35:     #7eb8f0;
+      --c-rafale:  #70e8a0;
+      --c-gripen:  #e870b8;
+      --c-su35:    #f07050;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       СБРОС СТИЛЕЙ / CSS RESET
+       ══════════════════════════════════════════════════════════════ */
+    *, *::before, *::after {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      cursor: crosshair;  /* Военный прицельный курсор / Military crosshair cursor */
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       НАЛОЖЕНИЯ / OVERLAY EFFECTS
+       Создают атмосферу военного дисплея
+       Create the atmosphere of a military display
+       ══════════════════════════════════════════════════════════════ */
+
+    /* Строчная развёртка (имитация ЭЛТ) / Scanline CRT effect */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent, transparent 2px,
+        rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Текстура шума / Noise grain texture */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0.5;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       ШАПКА / HEADER
+       Фиксированная навигационная панель с blur-эффектом
+       Fixed navigation bar with backdrop blur effect
+       ══════════════════════════════════════════════════════════════ */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      padding: 14px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5,8,16,0.88);
+      backdrop-filter: blur(16px);
+    }
+
+    /* Логотип / Logo */
+    .logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--amber);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .logo span { color: var(--text-dim); }
+
+    /* Навигационные ссылки / Navigation links */
+    nav {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    nav a {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--amber); }
+
+    /* Переключатель языка / Language switcher */
+    .lang-switcher {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .lang-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 4px 8px;
+      background: none;
+      border: 1px solid var(--text-dim);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-btn:hover,
+    .lang-btn.active {
+      background: rgba(255,184,0,0.15);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    /* Мигающий статус / Blinking status badge */
+    .classified {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--orange);
+      letter-spacing: 2px;
+      border: 1px solid var(--orange);
+      padding: 3px 8px;
+      animation: blink 2.2s step-end infinite;
+      flex-shrink: 0;
+    }
+    @keyframes blink { 50% { opacity: 0.35; } }
+
+    /* ══════════════════════════════════════════════════════════════
+       HERO / ЗАГЛАВНЫЙ РАЗДЕЛ
+       Полноэкранная заглавная секция с сеткой и свечением
+       Full-screen hero section with grid background and glow
+       ══════════════════════════════════════════════════════════════ */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 100px 40px 80px;
+      overflow: hidden;
+    }
+
+    /* Фоновое свечение / Background radial glow */
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 60%, rgba(255,184,0,0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 30% 40% at 20% 80%, rgba(255,107,0,0.04) 0%, transparent 60%),
+        linear-gradient(180deg, var(--darker) 0%, var(--dark) 100%);
+    }
+
+    /* Координатная сетка / Coordinate grid */
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,184,0,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,184,0,0.045) 1px, transparent 1px);
+      background-size: 64px 64px;
+      /* Маска — сетка видна только в центре / Mask — grid visible only in center */
+      mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 20%, transparent 70%);
+    }
+
+    /* Маркер подразделения / Unit marker */
+    .hero-eyebrow {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 5px;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      position: relative; z-index: 2;
+    }
+
+    /* Главный заголовок / Main title */
+    .hero-title {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(52px, 9vw, 108px);
+      font-weight: 900;
+      line-height: 0.92;
+      text-align: center;
+      position: relative; z-index: 2;
+      color: #fff;
+      text-shadow:
+        0 0 50px rgba(255,184,0,0.35),
+        0 0 100px rgba(255,184,0,0.12);
+    }
+    .hero-title .amber { color: var(--amber); }
+
+    /* Подзаголовок / Subtitle */
+    .hero-sub {
+      font-size: 14px;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      margin-top: 22px;
+      text-transform: uppercase;
+      position: relative; z-index: 2;
+      text-align: center;
+    }
+
+    /* Анимированная подсказка прокрутки / Animated scroll hint */
+    .scroll-hint {
+      position: absolute;
+      bottom: 28px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      animation: floatY 3s ease-in-out infinite;
+      z-index: 2;
+    }
+    @keyframes floatY {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50%      { transform: translateX(-50%) translateY(9px); }
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       ОБЩИЕ СТИЛИ СЕКЦИЙ / SECTION COMMON STYLES
+       ══════════════════════════════════════════════════════════════ */
+    .section-wrap {
+      padding: 80px 40px;
+      max-width: 1380px;
+      margin: 0 auto;
+    }
+
+    /* Метка раздела / Section label */
+    .section-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* Заголовок раздела / Section heading */
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(26px, 4vw, 46px);
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 40px;
+      line-height: 1.05;
+    }
+
+    /* Анимация появления при прокрутке / Scroll-reveal animation */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.75s ease, transform 0.75s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       3D ВЬЮВЕР / 3D VIEWER SECTION
+       Секция с интерактивной 3D моделью самолёта
+       Section with interactive 3D aircraft model
+       ══════════════════════════════════════════════════════════════ */
+    .viewer-section {
+      background: var(--mid);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .viewer-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 36px;
+      align-items: start;
+    }
+
+    /* Контейнер canvas / Canvas wrapper */
+    .canvas-wrap {
+      position: relative;
+      border: 1px solid var(--border);
+      aspect-ratio: 16/9;
+      background: radial-gradient(ellipse 65% 65% at 50% 50%,
+        rgba(255,184,0,0.025), var(--darker));
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+    }
+    .canvas-wrap:active { cursor: grabbing; }
+
+    /* Сетка фона вьювера / Viewer background grid */
+    .canvas-wrap::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(rgba(255,184,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,184,0,0.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+    }
+
+    /* Угловые маркеры / Corner markers */
+    .corner {
+      position: absolute;
+      width: 18px; height: 18px;
+      border-color: var(--amber);
+      border-style: solid;
+      opacity: 0.55;
+    }
+    .c-tl { top:12px; left:12px;  border-width: 1px 0 0 1px; }
+    .c-tr { top:12px; right:12px; border-width: 1px 1px 0 0; }
+    .c-bl { bottom:12px; left:12px;  border-width: 0 0 1px 1px; }
+    .c-br { bottom:12px; right:12px; border-width: 0 1px 1px 0; }
+
+    /* Основной canvas для рисования / Main drawing canvas */
+    #plane3d { width:100%; height:100%; display:block; }
+
+    /* HUD — индикатор телеметрии / HUD — telemetry display */
+    .hud-bar {
+      position: absolute;
+      bottom: 12px; left: 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--amber);
+      opacity: 0.75;
+      letter-spacing: 0.5px;
+    }
+
+    /* Название самолёта поверх canvas / Aircraft label overlay */
+    .hud-title {
+      position: absolute;
+      top: 14px; left: 14px;
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 3px;
+      opacity: 0.6;
+    }
+
+    /* Подсказка управления / Control hint */
+    .hud-hint {
+      position: absolute;
+      top: 14px; right: 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      text-align: right;
+      line-height: 1.7;
+    }
+
+    /* Кнопки управления вьювером / Viewer control buttons */
+    .view-buttons {
+      position: absolute;
+      bottom: 12px; right: 14px;
+      display: flex;
+      gap: 5px;
+    }
+    .vbtn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      padding: 3px 9px;
+      background: rgba(255,184,0,0.1);
+      border: 1px solid var(--border);
+      color: var(--amber);
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+    }
+    .vbtn:hover { background: rgba(255,184,0,0.22); }
+
+    /* Боковая панель данных вьювера / Viewer side data panel */
+    .viewer-data { display: flex; flex-direction: column; gap: 14px; }
+
+    .vdata-item {
+      border-left: 2px solid var(--amber);
+      padding-left: 14px;
+      transition: opacity 0.2s;
+    }
+    .vdata-item:hover { opacity: 0.8; }
+
+    .vdata-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .vdata-val {
+      font-family: 'Orbitron', monospace;
+      font-size: 17px;
+      color: var(--amber);
+      font-weight: 700;
+    }
+    .vdata-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    /* Hint text below viewer */
+    .viewer-tip {
+      margin-top: 10px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       ВКЛАДКИ / TABS
+       Переключаемые панели ТТХ
+       Switchable specs panels
+       ══════════════════════════════════════════════════════════════ */
+    .tabs-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+      gap: 0;
+    }
+    .tab-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 11px 22px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-transform: uppercase;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover, .tab-btn.active {
+      color: var(--amber);
+      border-bottom-color: var(--amber);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ══════════════════════════════════════════════════════════════
+       СЕТКА ХАРАКТЕРИСТИК / SPECS GRID
+       Карточки с техническими параметрами
+       Technical parameter cards
+       ══════════════════════════════════════════════════════════════ */
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-bottom: 50px;
+    }
+    .spec-card {
+      background: var(--darker);
+      padding: 18px 22px;
+      transition: background 0.2s;
+    }
+    .spec-card:hover { background: var(--surface); }
+    .spec-card-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--amber);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .spec-card-val {
+      font-family: 'Orbitron', monospace;
+      font-size: 19px;
+      color: #fff;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .spec-card-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       ТАБЛИЦА СРАВНЕНИЯ / COMPARISON TABLE
+       Цветовое кодирование результатов
+       Color-coded performance results
+       ══════════════════════════════════════════════════════════════ */
+    .compare-scroll { overflow-x: auto; }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Rajdhani', sans-serif;
+      min-width: 860px;
+    }
+    .compare-table th {
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 15px 16px;
+      text-align: center;
+      border-bottom: 2px solid var(--border);
+      letter-spacing: 0.5px;
+    }
+    .compare-table th:first-child {
+      text-align: left;
+      color: var(--text-dim);
+      font-size: 9px;
+      letter-spacing: 3px;
+    }
+    .compare-table td {
+      padding: 12px 16px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,184,0,0.06);
+      font-size: 14px;
+      color: var(--text);
+    }
+    .compare-table td:first-child {
+      text-align: left;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+    .compare-table tr:hover td { background: rgba(255,184,0,0.03); }
+
+    /* Цветовые классы результатов / Performance color classes */
+    .best { color: #70e870 !important; font-weight: 700; }   /* Лучший / Best */
+    .good { color: var(--amber) !important; }                 /* Хороший / Good */
+    .avg  { color: var(--text) !important; }                  /* Средний / Average */
+    .low  { color: #f07050 !important; }                      /* Слабый / Low */
+
+    /* Цвета заголовков столбцов / Column header colors */
+    .col-typhoon { color: var(--c-typhoon); }
+    .col-f35     { color: var(--c-f35); }
+    .col-rafale  { color: var(--c-rafale); }
+    .col-gripen  { color: var(--c-gripen); }
+    .col-su35    { color: var(--c-su35); }
+
+    /* ══════════════════════════════════════════════════════════════
+       СТОЛБЧАТЫЕ ДИАГРАММЫ / BAR CHARTS
+       Горизонтальные полосы сравнения
+       Horizontal comparison bars
+       ══════════════════════════════════════════════════════════════ */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      margin-top: 56px;
+    }
+
+    .chart-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+    .bar-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 9px;
+      width: 110px;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+    .bar-track {
+      flex: 1;
+      height: 5px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    /* Заполнение анимируется при появлении в экране / Fill animates on scroll */
+    .bar-fill {
+      height: 100%;
+      transform: scaleX(0);
+      transform-origin: left;
+      animation: barExpand 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes barExpand { to { transform: scaleX(1); } }
+    .bar-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      width: 70px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       РАДАРНЫЕ ДИАГРАММЫ / RADAR CHARTS
+       Нарисованы на canvas через JS
+       Drawn on canvas via JS
+       ══════════════════════════════════════════════════════════════ */
+    .radar-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 44px;
+      margin-top: 50px;
+    }
+    .radar-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+    canvas.radar-canvas { width: 100%; aspect-ratio: 1; }
+
+    /* ══════════════════════════════════════════════════════════════
+       КАРТОЧКИ ОРУЖИЯ / WEAPON CARDS
+       ══════════════════════════════════════════════════════════════ */
+    .weapons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .weapon-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 16px;
+      transition: border-color 0.25s, transform 0.25s, background 0.25s;
+    }
+    .weapon-card:hover {
+      border-color: var(--amber);
+      transform: translateY(-3px);
+      background: rgba(255,184,0,0.04);
+    }
+    .weapon-type {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--amber);
+      margin-bottom: 5px;
+    }
+    .weapon-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      color: #fff;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .weapon-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       ПОДВАЛ / FOOTER
+       ══════════════════════════════════════════════════════════════ */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 26px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    footer .f-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--amber);
+    }
+    footer p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       АДАПТИВНОСТЬ / RESPONSIVE
+       ══════════════════════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      header { padding: 12px 20px; flex-wrap: wrap; }
+      nav { display: none; }
+      .viewer-layout { grid-template-columns: 1fr; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .radar-grid { grid-template-columns: 1fr; }
+      .section-wrap { padding: 50px 20px; }
+      .viewer-tip { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     ШАПКА / HEADER
+     ════════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo">EUROFIGHTER <span>// AESA</span></div>
+
+  <!-- Навигация / Navigation -->
+  <nav>
+    <a href="#viewer"  data-i18n="nav_3d">3D МОДЕЛЬ</a>
+    <a href="#specs"   data-i18n="nav_specs">ТТХ</a>
+    <a href="#compare" data-i18n="nav_compare">СРАВНЕНИЕ</a>
+    <a href="#weapons" data-i18n="nav_weapons">ВООРУЖЕНИЕ</a>
+  </nav>
+
+  <!-- Переключатель языков / Language switcher -->
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('ru')">RU</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('de')">DE</button>
+    <button class="lang-btn" onclick="setLang('fr')">FR</button>
+  </div>
+
+  <div class="classified" data-i18n="classified">// UNCLASSIFIED //</div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════════
+     HERO СЕКЦИЯ / HERO SECTION
+     ════════════════════════════════════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-eyebrow">AIRBUS DEFENCE &amp; SPACE // EUROFIGHTER GmbH</div>
+  <h1 class="hero-title">
+    TYPHOON<br><span class="amber">EF-2000</span>
+  </h1>
+  <p class="hero-sub" data-i18n="hero_sub">
+    Многоцелевой истребитель 4++ поколения · AESA · Swing Role
+  </p>
+  <div class="scroll-hint" data-i18n="scroll_hint">↓ ПРОКРУТИТЕ ВНИЗ</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     3D ВЬЮВЕР / 3D VIEWER
+     id="viewer" — якорь для навигации / anchor for navigation
+     ════════════════════════════════════════════════════════════════ -->
+<div class="viewer-section" id="viewer">
+  <div class="section-wrap">
+    <div class="section-label" data-i18n="label_01">01 // 3D ВИЗУАЛИЗАЦИЯ</div>
+    <div class="section-title" data-i18n="title_viewer">ИНТЕРАКТИВНАЯ<br>МОДЕЛЬ</div>
+
+    <div class="viewer-layout">
+
+      <!-- Canvas-контейнер / Canvas container -->
+      <div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <!-- Угловые маркеры / Corner markers -->
+          <div class="corner c-tl"></div>
+          <div class="corner c-tr"></div>
+          <div class="corner c-bl"></div>
+          <div class="corner c-br"></div>
+
+          <!-- Оверлей названия / Title overlay -->
+          <div class="hud-title">EF-2000 TYPHOON</div>
+
+          <!-- Оверлей подсказки / Hint overlay -->
+          <div class="hud-hint" data-i18n="viewer_hint_html">
+            DRAG — вращение<br>
+            SHIFT+DRAG — панорама<br>
+            WHEEL — зум
+          </div>
+
+          <!-- Основной canvas для 3D / Main 3D canvas -->
+          <canvas id="plane3d"></canvas>
+
+          <!-- HUD телеметрия / HUD telemetry -->
+          <div class="hud-bar" id="hudBar">ROT: 0° | ELEV: 15° | ZOOM: 1.0x</div>
+
+          <!-- Кнопки вида / View buttons -->
+          <div class="view-buttons">
+            <button class="vbtn" onclick="resetView()"    data-i18n="btn_reset">RESET</button>
+            <button class="vbtn" id="autoBtn" onclick="toggleAuto()" data-i18n="btn_auto">AUTO</button>
+            <button class="vbtn" onclick="setPreset('top')"   data-i18n="btn_top">TOP</button>
+            <button class="vbtn" onclick="setPreset('side')"  data-i18n="btn_side">SIDE</button>
+            <button class="vbtn" onclick="setPreset('front')" data-i18n="btn_front">FRONT</button>
+          </div>
+        </div>
+        <div class="viewer-tip" data-i18n="viewer_tip">
+          ← ПЕРЕТАЩИТЕ ДЛЯ ВРАЩЕНИЯ | КОЛЕСО = ЗУУМ | SHIFT+DRAG = ПАНОРАМА
+        </div>
+      </div>
+
+      <!-- Панель данных / Data panel -->
+      <div class="viewer-data reveal">
+        <div class="vdata-item">
+          <div class="vdata-label" data-i18n="d_length">ДЛИНА</div>
+          <div class="vdata-val">15.96 <span style="font-size:12px;color:var(--text-dim)">м</span></div>
+          <div class="vdata-sub" data-i18n="d_length_sub">52.4 ft</div>
+        </div>
+        <div class="vdata-item">
+          <div class="vdata-label" data-i18n="d_span">РАЗМАХ КРЫЛА</div>
+          <div class="vdata-val">10.95 <span style="font-size:12px;color:var(--text-dim)">м</span></div>
+          <div class="vdata-sub">35.9 ft</div>
+        </div>
+        <div class="vdata-item">
+          <div class="vdata-label" data-i18n="d_height">ВЫСОТА</div>
+          <div class="vdata-val">5.28 <span style="font-size:12px;color:var(--text-dim)">м</span></div>
+          <div class="vdata-sub">17.3 ft</div>
+        </div>
+        <div class="vdata-item">
+          <div class="vdata-label" data-i18n="d_speed">МАКС. СКОРОСТЬ</div>
+          <div class="vdata-val">Mach 2.0</div>
+          <div class="vdata-sub" data-i18n="d_speed_sub">≈ 2 125 км/ч</div>
+        </div>
+        <div class="vdata-item">
+          <div class="vdata-label" data-i18n="d_thrust">ТЯГА (2×EJ200)</div>
+          <div class="vdata-val">2×90 <span style="font-size:12px;color:var(--text-dim)">кН</span></div>
+          <div class="vdata-sub" data-i18n="d_thrust_sub">с форсажем</div>
+        </div>
+        <div class="vdata-item">
+          <div class="vdata-label" data-i18n="d_payload">БОЕВАЯ НАГРУЗКА</div>
+          <div class="vdata-val">7 500 <span style="font-size:12px;color:var(--text-dim)">кг</span></div>
+          <div class="vdata-sub">13 × hardpoints</div>
+        </div>
+      </div>
+
+    </div><!-- /viewer-layout -->
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     ХАРАКТЕРИСТИКИ / SPECS
+     id="specs" — якорь / anchor
+     ════════════════════════════════════════════════════════════════ -->
+<section id="specs">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" data-i18n="label_02">02 // ТТХ</div>
+      <div class="section-title" data-i18n="title_specs">ТЕХНИЧЕСКИЕ<br>ДАННЫЕ</div>
+    </div>
+
+    <!-- Навигация по вкладкам / Tab navigation -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('general', this)" data-i18n="tab_general">ОБЩИЕ</button>
+      <button class="tab-btn"        onclick="switchTab('flight', this)"  data-i18n="tab_flight">ЛЁТНЫЕ</button>
+      <button class="tab-btn"        onclick="switchTab('avionics', this)" data-i18n="tab_avionics">АВИОНИКА</button>
+    </div>
+
+    <!-- ВКЛАДКА: ОБЩИЕ / TAB: GENERAL -->
+    <div id="tab-general" class="tab-panel active">
+      <div class="specs-grid reveal">
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_maker">ПРОИЗВОДИТЕЛЬ</div>
+          <div class="spec-card-val" style="font-size:15px">Eurofighter GmbH</div>
+          <div class="spec-card-sub">BAE Systems / Airbus / Leonardo</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_gen">ПОКОЛЕНИЕ</div>
+          <div class="spec-card-val">4++</div>
+          <div class="spec-card-sub" data-i18n="spec_gen_sub">Swing-Role Multi-Mission</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_engine">ДВИГАТЕЛИ</div>
+          <div class="spec-card-val" style="font-size:15px">2× EJ200</div>
+          <div class="spec-card-sub" data-i18n="spec_engine_sub">Eurojet, 90 кН с форсажем</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_emptyweight">ПУСТОЙ ВЕС</div>
+          <div class="spec-card-val">11 000 <span style="font-size:13px">кг</span></div>
+          <div class="spec-card-sub" data-i18n="spec_emptyweight_sub">Взлётный ~23 500 кг</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_crew">ЭКИПАЖ</div>
+          <div class="spec-card-val">1–2</div>
+          <div class="spec-card-sub" data-i18n="spec_crew_sub">Одноместный / учебно-боевой</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_hardpoints">ТОЧКИ ПОДВЕСКИ</div>
+          <div class="spec-card-val">13</div>
+          <div class="spec-card-sub" data-i18n="spec_hardpoints_sub">6 крыло + 5 фюзеляж + 2 конц.</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_gun">ПУШКА</div>
+          <div class="spec-card-val" style="font-size:15px">27мм Mauser BK-27</div>
+          <div class="spec-card-sub" data-i18n="spec_gun_sub">1 700 выст./мин, 150 снарядов</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_built">ПОСТРОЕНО</div>
+          <div class="spec-card-val">600+</div>
+          <div class="spec-card-sub" data-i18n="spec_built_sub">Трансши 1–3, QUADRIGA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА: ЛЁТНЫЕ / TAB: FLIGHT -->
+    <div id="tab-flight" class="tab-panel">
+      <div class="specs-grid reveal">
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_maxspeed">МАКС. СКОРОСТЬ</div>
+          <div class="spec-card-val">Mach 2.0</div>
+          <div class="spec-card-sub">≈ 2 125 км/ч</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_ceiling">ПРАКТИЧ. ПОТОЛОК</div>
+          <div class="spec-card-val">19 812 <span style="font-size:13px">м</span></div>
+          <div class="spec-card-sub">~65 000 ft</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_range">БОЕВОЙ РАДИУС</div>
+          <div class="spec-card-val">1 390 <span style="font-size:13px">км</span></div>
+          <div class="spec-card-sub" data-i18n="spec_range_sub">Перегон: 3 790 км</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_twr">ТЯГОВООРУЖЁННОСТЬ</div>
+          <div class="spec-card-val">1.07</div>
+          <div class="spec-card-sub" data-i18n="spec_twr_sub">Норм. взлётная масса</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_climbrate">СКОРОПОДЪЁМНОСТЬ</div>
+          <div class="spec-card-val">&gt;315 <span style="font-size:13px">м/с</span></div>
+          <div class="spec-card-sub" data-i18n="spec_climbrate_sub">Быстрый набор высоты</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_supercruise">СУПЕРКРУИЗ</div>
+          <div class="spec-card-val">Mach 1.5</div>
+          <div class="spec-card-sub" data-i18n="spec_supercruise_sub">Без форсажа (лимит.)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_g">ПЕРЕГРУЗКА</div>
+          <div class="spec-card-val">−3 / +9g</div>
+          <div class="spec-card-sub" data-i18n="spec_g_sub">Высокая манёвренность</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_fuel">ТОПЛИВО (ВНУТР.)</div>
+          <div class="spec-card-val">5 000 <span style="font-size:13px">кг</span></div>
+          <div class="spec-card-sub" data-i18n="spec_fuel_sub">+ до 3 × 1 000 л ПТБ</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ВКЛАДКА: АВИОНИКА / TAB: AVIONICS -->
+    <div id="tab-avionics" class="tab-panel">
+      <div class="specs-grid reveal">
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_radar">РАДАР</div>
+          <div class="spec-card-val" style="font-size:15px">Captor-E AESA</div>
+          <div class="spec-card-sub" data-i18n="spec_radar_sub">E-scan, 1 500+ T/R модулей</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_radar_range">ДАЛЬНОСТЬ РЛС</div>
+          <div class="spec-card-val">&gt;200 <span style="font-size:13px">км</span></div>
+          <div class="spec-card-sub" data-i18n="spec_radar_range_sub">Обнаружение ВЦ (оценка)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_targets">ЦЕЛИ ОДНОВР.</div>
+          <div class="spec-card-val">≥20</div>
+          <div class="spec-card-sub" data-i18n="spec_targets_sub">Трассировка + пуск</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label">IRST</div>
+          <div class="spec-card-val" style="font-size:15px">PIRATE</div>
+          <div class="spec-card-sub" data-i18n="spec_irst_sub">ИК трекер 3–5 мкм, пассивный</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_helmet">ШЛЕМ</div>
+          <div class="spec-card-val" style="font-size:15px">Striker II</div>
+          <div class="spec-card-sub" data-i18n="spec_helmet_sub">HMD, нашлемный прицел ракет</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_ew">РЭБ</div>
+          <div class="spec-card-val" style="font-size:14px">DASS / EPDS</div>
+          <div class="spec-card-sub" data-i18n="spec_ew_sub">Интегр. система самозащиты</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_interface">ИНТЕРФЕЙС</div>
+          <div class="spec-card-val" style="font-size:14px">HoTAS + MFD</div>
+          <div class="spec-card-sub" data-i18n="spec_interface_sub">Голосовое управление DVI</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-card-label" data-i18n="spec_datalink">СВЯЗЬ</div>
+          <div class="spec-card-val" style="font-size:14px">Link 16 + MIDS</div>
+          <div class="spec-card-sub" data-i18n="spec_datalink_sub">Тактический обмен данными</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /section-wrap -->
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════
+     СРАВНЕНИЕ / COMPARISON
+     ════════════════════════════════════════════════════════════════ -->
+<div style="background:var(--mid); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+<section id="compare">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" data-i18n="label_03">03 // СРАВНЕНИЕ</div>
+      <div class="section-title" data-i18n="title_compare">ИСТРЕБИТЕЛИ<br>4/4++ ПОКОЛЕНИЯ</div>
+    </div>
+
+    <!-- Таблица сравнения / Comparison table -->
+    <div class="compare-scroll reveal">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th data-i18n="th_param">ПАРАМЕТР</th>
+            <th class="col-typhoon">TYPHOON<br><span style="font-size:9px;opacity:0.5">EF-2000</span></th>
+            <th class="col-f35">F-35A<br><span style="font-size:9px;opacity:0.5">Lockheed</span></th>
+            <th class="col-rafale">RAFALE F4<br><span style="font-size:9px;opacity:0.5">Dassault</span></th>
+            <th class="col-gripen">GRIPEN E<br><span style="font-size:9px;opacity:0.5">Saab</span></th>
+            <th class="col-su35">Су-35С<br><span style="font-size:9px;opacity:0.5">Сухой</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td data-i18n="cmp_speed">Макс. скорость</td>
+            <td class="good">Mach 2.0</td>
+            <td class="low">Mach 1.6</td>
+            <td class="avg">Mach 1.8</td>
+            <td class="good">Mach 2.0</td>
+            <td class="best">Mach 2.25</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_radius">Боевой радиус</td>
+            <td class="good">1 390 км</td>
+            <td class="avg">1 080 км</td>
+            <td class="best">1 850 км</td>
+            <td class="low">800 км</td>
+            <td class="best">1 600 км</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_twr">Тяговооружённость</td>
+            <td class="good">1.07</td>
+            <td class="low">0.87</td>
+            <td class="avg">0.99</td>
+            <td class="good">1.02</td>
+            <td class="best">1.13</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_gen">Поколение</td>
+            <td class="good">4++</td>
+            <td class="best">5-е</td>
+            <td class="good">4++</td>
+            <td class="avg">4+</td>
+            <td class="avg">4++</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_rcs">Малозаметность (ЭПР)</td>
+            <td class="avg">~0.5 м²</td>
+            <td class="best">~0.001 м²</td>
+            <td class="avg">~1.0 м²</td>
+            <td class="good">~0.3 м²</td>
+            <td class="low">~4 м²</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_radar">Тип радара</td>
+            <td class="best">AESA Captor-E</td>
+            <td class="best">AESA APG-81</td>
+            <td class="best">AESA RBE2</td>
+            <td class="best">AESA PS-05/A</td>
+            <td class="avg">PESA Ирбис-Э</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_load">Боевая нагрузка</td>
+            <td class="good">7 500 кг</td>
+            <td class="avg">8 160 кг</td>
+            <td class="best">9 500 кг</td>
+            <td class="low">5 300 кг</td>
+            <td class="good">8 000 кг</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_g">Макс. перегрузка</td>
+            <td class="good">+9g</td>
+            <td class="avg">+9g</td>
+            <td class="good">+9g</td>
+            <td class="good">+9g</td>
+            <td class="good">+9g</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_supercruise">Суперкруиз</td>
+            <td class="avg">M 1.5 (лим.)</td>
+            <td class="low">Нет</td>
+            <td class="good">M 1.4</td>
+            <td class="low">Нет</td>
+            <td class="low">Нет</td>
+          </tr>
+          <tr>
+            <td data-i18n="cmp_country">Страна</td>
+            <td>🇬🇧🇩🇪🇪🇸🇮🇹</td>
+            <td>🇺🇸</td>
+            <td>🇫🇷</td>
+            <td>🇸🇪</td>
+            <td>🇷🇺</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top:8px; font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text-dim);"
+         data-i18n="compare_note">
+        * Открытые источники. Некоторые параметры — оценочные.
+      </p>
+    </div>
+
+    <!-- Столбчатые диаграммы / Bar charts -->
+    <div class="charts-grid reveal">
+      <!-- TWR chart -->
+      <div>
+        <div class="chart-title" data-i18n="chart_twr">ТЯГОВООРУЖЁННОСТЬ</div>
+
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-su35)">СУ-35С</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--c-su35);animation-delay:.05s"></div></div>
+          <div class="bar-val" style="color:var(--c-su35)">1.13</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-typhoon)">TYPHOON</div>
+          <div class="bar-track"><div class="bar-fill" style="width:94.7%;background:var(--c-typhoon);animation-delay:.1s"></div></div>
+          <div class="bar-val" style="color:var(--c-typhoon)">1.07</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-gripen)">GRIPEN E</div>
+          <div class="bar-track"><div class="bar-fill" style="width:90.3%;background:var(--c-gripen);animation-delay:.15s"></div></div>
+          <div class="bar-val" style="color:var(--c-gripen)">1.02</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-rafale)">RAFALE F4</div>
+          <div class="bar-track"><div class="bar-fill" style="width:87.6%;background:var(--c-rafale);animation-delay:.2s"></div></div>
+          <div class="bar-val" style="color:var(--c-rafale)">0.99</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-f35)">F-35A</div>
+          <div class="bar-track"><div class="bar-fill" style="width:77%;background:var(--c-f35);animation-delay:.25s"></div></div>
+          <div class="bar-val" style="color:var(--c-f35)">0.87</div>
+        </div>
+      </div>
+
+      <!-- Combat radius chart -->
+      <div>
+        <div class="chart-title" data-i18n="chart_radius">БОЕВОЙ РАДИУС (км)</div>
+
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-rafale)">RAFALE F4</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--c-rafale);animation-delay:.05s"></div></div>
+          <div class="bar-val" style="color:var(--c-rafale)">1850</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-su35)">СУ-35С</div>
+          <div class="bar-track"><div class="bar-fill" style="width:86.5%;background:var(--c-su35);animation-delay:.1s"></div></div>
+          <div class="bar-val" style="color:var(--c-su35)">1600</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-typhoon)">TYPHOON</div>
+          <div class="bar-track"><div class="bar-fill" style="width:75.1%;background:var(--c-typhoon);animation-delay:.15s"></div></div>
+          <div class="bar-val" style="color:var(--c-typhoon)">1390</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-f35)">F-35A</div>
+          <div class="bar-track"><div class="bar-fill" style="width:58.4%;background:var(--c-f35);animation-delay:.2s"></div></div>
+          <div class="bar-val" style="color:var(--c-f35)">1080</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-name" style="color:var(--c-gripen)">GRIPEN E</div>
+          <div class="bar-track"><div class="bar-fill" style="width:43.2%;background:var(--c-gripen);animation-delay:.25s"></div></div>
+          <div class="bar-val" style="color:var(--c-gripen)">800</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Радарные диаграммы / Radar charts -->
+    <div class="radar-grid reveal">
+      <div>
+        <div class="radar-label" data-i18n="radar_aa">ВОЗДУХ — ВОЗДУХ</div>
+        <canvas id="radarAA" class="radar-canvas" width="400" height="400"></canvas>
+      </div>
+      <div>
+        <div class="radar-label" data-i18n="radar_ag">ВОЗДУХ — ЗЕМЛЯ</div>
+        <canvas id="radarAG" class="radar-canvas" width="400" height="400"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /section-wrap -->
+</section>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     ВООРУЖЕНИЕ / WEAPONS
+     ════════════════════════════════════════════════════════════════ -->
+<section id="weapons">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" data-i18n="label_04">04 // ВООРУЖЕНИЕ</div>
+      <div class="section-title" data-i18n="title_weapons">БОЕВАЯ<br>НАГРУЗКА</div>
+    </div>
+
+    <div class="weapons-grid reveal">
+
+      <!-- Каждая карточка = отдельная система вооружения
+           Each card = individual weapon system -->
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_bvr">В-В / ДАЛЬНЕЕ</div>
+        <div class="weapon-name">Meteor</div>
+        <div class="weapon-desc" data-i18n="wd_meteor">
+          BVRAAM с прямоточным двигателем Ramjet. Дальность 100+ км, активная ГСН, No-Escape Zone в 5× больше AIM-120C.
+        </div>
+      </div>
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_mraam">В-В / СРЕДН.</div>
+        <div class="weapon-name">AIM-120C AMRAAM</div>
+        <div class="weapon-desc" data-i18n="wd_amraam">
+          Активная РГСН. Дальность ~180 км (вариант C-8). Основная BVR-ракета НАТО, огонь-и-забудь.
+        </div>
+      </div>
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_sraam">В-В / БЛИЖНИЙ БОЙ</div>
+        <div class="weapon-name">IRIS-T</div>
+        <div class="weapon-desc" data-i18n="wd_iris">
+          Нашлемное целеуказание ±90°, ИК ГСН. Высокоманёвренная, LOAL. Интеграция со Striker II HMD.
+        </div>
+      </div>
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_cruise">В-З / КРЫЛАТАЯ</div>
+        <div class="weapon-name">Storm Shadow / SCALP</div>
+        <div class="weapon-desc" data-i18n="wd_stormshadow">
+          Крылатая ракета дальностью 560+ км. Дозвуковая, terrain-following, проникающая БЧ BROACH.
+        </div>
+      </div>
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_atk">В-З / ПРОТИВОТАНК.</div>
+        <div class="weapon-name">Brimstone 3</div>
+        <div class="weapon-desc" data-i18n="wd_brimstone">
+          Двойная ГСН (активный радар + ИК). Роевая атака: несколько ракет — множество целей. MBDA.
+        </div>
+      </div>
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_bomb">В-З / УПРАВЛ. БОМБА</div>
+        <div class="weapon-name">Paveway IV</div>
+        <div class="weapon-desc" data-i18n="wd_paveway">
+          225 кг, GPS/INS + лазерная наводка. Программируемый взрыватель, режим малых потерь.
+        </div>
+      </div>
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_gun">ПУШКА</div>
+        <div class="weapon-name">Mauser BK-27</div>
+        <div class="weapon-desc" data-i18n="wd_bk27">
+          27×145 мм, 1 700 выст./мин, 150 снарядов. Газоотводный принцип, ленточная подача.
+        </div>
+      </div>
+
+      <div class="weapon-card">
+        <div class="weapon-type" data-i18n="wt_nuke">ЯДЕРНОЕ (NATO)</div>
+        <div class="weapon-name">B61-12</div>
+        <div class="weapon-desc" data-i18n="wd_b61">
+          Управляемая тактическая ядерная бомба. Германия и Италия — носители по NATO nuclear sharing.
+        </div>
+      </div>
+
+    </div><!-- /weapons-grid -->
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════
+     ПОДВАЛ / FOOTER
+     ════════════════════════════════════════════════════════════════ -->
+<footer>
+  <div class="f-logo">EUROFIGHTER // AESA</div>
+  <p data-i18n="footer_note">ДАННЫЕ ИЗ ОТКРЫТЫХ ИСТОЧНИКОВ · ТОЛЬКО В ИНФОРМАЦИОННЫХ ЦЕЛЯХ · 2024</p>
+  <div class="classified" data-i18n="classified">// UNCLASSIFIED //</div>
+</footer>
+
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT — ОСНОВНОЙ БЛОК / MAIN SCRIPT BLOCK
+     ════════════════════════════════════════════════════════════════ -->
+<script>
+"use strict";
+
+/* ──────────────────────────────────────────────────────────────────
+   БЛОК 1: ЛОКАЛИЗАЦИЯ / BLOCK 1: LOCALIZATION
+   Все строки интерфейса на 4 языках
+   All UI strings in 4 languages
+   ────────────────────────────────────────────────────────────────── */
+const i18n = {
+
+  /* ── РУССКИЙ / RUSSIAN ── */
+  ru: {
+    nav_3d:        "3D МОДЕЛЬ",
+    nav_specs:     "ТТХ",
+    nav_compare:   "СРАВНЕНИЕ",
+    nav_weapons:   "ВООРУЖЕНИЕ",
+    classified:    "// НЕСЕКРЕТНО //",
+    hero_sub:      "Многоцелевой истребитель 4++ поколения · AESA · Swing Role",
+    scroll_hint:   "↓ ПРОКРУТИТЕ ВНИЗ",
+    label_01:      "01 // 3D ВИЗУАЛИЗАЦИЯ",
+    title_viewer:  "ИНТЕРАКТИВНАЯ<br>МОДЕЛЬ",
+    viewer_hint_html: "DRAG — вращение<br>SHIFT+DRAG — панорама<br>WHEEL — зум",
+    viewer_tip:    "← ПЕРЕТАЩИТЕ ДЛЯ ВРАЩЕНИЯ | КОЛЕСО = ЗУУМ | SHIFT = ПАНОРАМА",
+    btn_reset:     "СБРОС",
+    btn_auto:      "АВТО",
+    btn_top:       "СВЕРХУ",
+    btn_side:      "СБОКУ",
+    btn_front:     "СПЕРЕДИ",
+    d_length:      "ДЛИНА",
+    d_length_sub:  "52.4 ft",
+    d_span:        "РАЗМАХ КРЫЛА",
+    d_height:      "ВЫСОТА",
+    d_speed:       "МАКС. СКОРОСТЬ",
+    d_speed_sub:   "≈ 2 125 км/ч",
+    d_thrust:      "ТЯГА (2×EJ200)",
+    d_thrust_sub:  "с форсажем",
+    d_payload:     "БОЕВАЯ НАГРУЗКА",
+    label_02:      "02 // ТТХ",
+    title_specs:   "ТЕХНИЧЕСКИЕ<br>ДАННЫЕ",
+    tab_general:   "ОБЩИЕ",
+    tab_flight:    "ЛЁТНЫЕ",
+    tab_avionics:  "АВИОНИКА",
+    spec_maker:    "ПРОИЗВОДИТЕЛЬ",
+    spec_gen:      "ПОКОЛЕНИЕ",
+    spec_gen_sub:  "Swing-Role мульти-миссия",
+    spec_engine:   "ДВИГАТЕЛИ",
+    spec_engine_sub:"Eurojet, 90 кН с форсажем",
+    spec_emptyweight:"ПУСТОЙ ВЕС",
+    spec_emptyweight_sub:"Взлётный ~23 500 кг",
+    spec_crew:     "ЭКИПАЖ",
+    spec_crew_sub: "Одноместный / учебно-боевой",
+    spec_hardpoints:"ТОЧКИ ПОДВЕСКИ",
+    spec_hardpoints_sub:"6 крыло + 5 фюзеляж + 2 конц.",
+    spec_gun:      "ПУШКА",
+    spec_gun_sub:  "1 700 выст./мин, 150 снарядов",
+    spec_built:    "ПОСТРОЕНО",
+    spec_built_sub:"Трансши 1–3, QUADRIGA",
+    spec_maxspeed: "МАКС. СКОРОСТЬ",
+    spec_ceiling:  "ПРАКТИЧ. ПОТОЛОК",
+    spec_range:    "БОЕВОЙ РАДИУС",
+    spec_range_sub:"Перегон: 3 790 км",
+    spec_twr:      "ТЯГОВООРУЖЁННОСТЬ",
+    spec_twr_sub:  "Норм. взлётная масса",
+    spec_climbrate:"СКОРОПОДЪЁМНОСТЬ",
+    spec_climbrate_sub:"Быстрый набор высоты",
+    spec_supercruise:"СУПЕРКРУИЗ",
+    spec_supercruise_sub:"Без форсажа (лимит.)",
+    spec_g:        "ПЕРЕГРУЗКА",
+    spec_g_sub:    "Высокая манёвренность",
+    spec_fuel:     "ТОПЛИВО (ВНУТР.)",
+    spec_fuel_sub: "+ до 3 × 1 000 л ПТБ",
+    spec_radar:    "РАДАР",
+    spec_radar_sub:"E-scan, 1 500+ T/R модулей",
+    spec_radar_range:"ДАЛЬНОСТЬ РЛС",
+    spec_radar_range_sub:"Обнаружение ВЦ (оценка)",
+    spec_targets:  "ЦЕЛИ ОДНОВР.",
+    spec_targets_sub:"Трассировка + пуск",
+    spec_irst_sub: "ИК трекер 3–5 мкм, пассивный",
+    spec_helmet:   "ШЛЕМ",
+    spec_helmet_sub:"HMD, нашлемный прицел ракет",
+    spec_ew:       "РЭБ",
+    spec_ew_sub:   "Интегр. система самозащиты",
+    spec_interface:"ИНТЕРФЕЙС",
+    spec_interface_sub:"Голосовое управление DVI",
+    spec_datalink: "СВЯЗЬ",
+    spec_datalink_sub:"Тактический обмен данными",
+    label_03:      "03 // СРАВНЕНИЕ",
+    title_compare: "ИСТРЕБИТЕЛИ<br>4/4++ ПОКОЛЕНИЯ",
+    th_param:      "ПАРАМЕТР",
+    cmp_speed:     "Макс. скорость",
+    cmp_radius:    "Боевой радиус",
+    cmp_twr:       "Тяговооружённость",
+    cmp_gen:       "Поколение",
+    cmp_rcs:       "Малозаметность (ЭПР)",
+    cmp_radar:     "Тип радара",
+    cmp_load:      "Боевая нагрузка",
+    cmp_g:         "Макс. перегрузка",
+    cmp_supercruise:"Суперкруиз",
+    cmp_country:   "Страна",
+    compare_note:  "* Открытые источники. Некоторые параметры — оценочные.",
+    chart_twr:     "ТЯГОВООРУЖЁННОСТЬ",
+    chart_radius:  "БОЕВОЙ РАДИУС (км)",
+    radar_aa:      "ВОЗДУХ — ВОЗДУХ",
+    radar_ag:      "ВОЗДУХ — ЗЕМЛЯ",
+    label_04:      "04 // ВООРУЖЕНИЕ",
+    title_weapons: "БОЕВАЯ<br>НАГРУЗКА",
+    wt_bvr:        "В-В / ДАЛЬНЕЕ",
+    wd_meteor:     "BVRAAM с прямоточным двигателем Ramjet. Дальность 100+ км, активная ГСН, No-Escape Zone в 5× больше AIM-120C.",
+    wt_mraam:      "В-В / СРЕДН.",
+    wd_amraam:     "Активная РГСН. Дальность ~180 км (C-8). Основная BVR-ракета НАТО, огонь-и-забудь.",
+    wt_sraam:      "В-В / БЛИЖНИЙ БОЙ",
+    wd_iris:       "Нашлемное целеуказание ±90°, ИК ГСН. Высокоманёвренная, LOAL. Интеграция со Striker II HMD.",
+    wt_cruise:     "В-З / КРЫЛАТАЯ",
+    wd_stormshadow:"Крылатая ракета дальностью 560+ км. Дозвуковая, terrain-following, проникающая БЧ BROACH.",
+    wt_atk:        "В-З / ПРОТИВОТАНК.",
+    wd_brimstone:  "Двойная ГСН (активный радар + ИК). Роевая атака: несколько ракет — множество целей. MBDA.",
+    wt_bomb:       "В-З / УПРАВЛ. БОМБА",
+    wd_paveway:    "225 кг, GPS/INS + лазерная наводка. Программируемый взрыватель, режим малых потерь.",
+    wt_gun:        "ПУШКА",
+    wd_bk27:       "27×145 мм, 1 700 выст./мин, 150 снарядов. Газоотводный принцип, ленточная подача.",
+    wt_nuke:       "ЯДЕРНОЕ (NATO)",
+    wd_b61:        "Управляемая тактическая ядерная бомба. Германия и Италия — носители по NATO nuclear sharing.",
+    footer_note:   "ДАННЫЕ ИЗ ОТКРЫТЫХ ИСТОЧНИКОВ · ТОЛЬКО В ИНФОРМАЦИОННЫХ ЦЕЛЯХ · 2024",
+    radarAxesAA:   ["BVR", "МАНЁВР", "СКОРОСТЬ", "НАБОР ВЫС.", "БЛИЖНИЙ", "АВИОНИКА"],
+    radarAxesAG:   ["РАДИУС", "НАГРУЗКА", "ТОЧНОСТЬ", "ЖИВУЧ.", "КРЕЙСЕР.", "СКРЫТН."],
+  },
+
+  /* ── ENGLISH ── */
+  en: {
+    nav_3d:        "3D MODEL",
+    nav_specs:     "SPECS",
+    nav_compare:   "COMPARE",
+    nav_weapons:   "WEAPONS",
+    classified:    "// UNCLASSIFIED //",
+    hero_sub:      "4++ Generation Multirole Fighter · AESA · Swing Role",
+    scroll_hint:   "↓ SCROLL DOWN",
+    label_01:      "01 // 3D VISUALISATION",
+    title_viewer:  "INTERACTIVE<br>MODEL",
+    viewer_hint_html: "DRAG — rotate<br>SHIFT+DRAG — pan<br>WHEEL — zoom",
+    viewer_tip:    "← DRAG TO ROTATE | WHEEL = ZOOM | SHIFT+DRAG = PAN",
+    btn_reset:     "RESET",
+    btn_auto:      "AUTO",
+    btn_top:       "TOP",
+    btn_side:      "SIDE",
+    btn_front:     "FRONT",
+    d_length:      "LENGTH",
+    d_length_sub:  "52.4 ft",
+    d_span:        "WING SPAN",
+    d_height:      "HEIGHT",
+    d_speed:       "MAX SPEED",
+    d_speed_sub:   "≈ 1,320 mph",
+    d_thrust:      "THRUST (2×EJ200)",
+    d_thrust_sub:  "with afterburner",
+    d_payload:     "PAYLOAD",
+    label_02:      "02 // TECHNICAL SPECS",
+    title_specs:   "TECHNICAL<br>DATA",
+    tab_general:   "GENERAL",
+    tab_flight:    "FLIGHT",
+    tab_avionics:  "AVIONICS",
+    spec_maker:    "MANUFACTURER",
+    spec_gen:      "GENERATION",
+    spec_gen_sub:  "Swing-Role Multi-Mission",
+    spec_engine:   "ENGINES",
+    spec_engine_sub:"Eurojet, 90 kN with afterburner",
+    spec_emptyweight:"EMPTY WEIGHT",
+    spec_emptyweight_sub:"MTOW ~23,500 kg",
+    spec_crew:     "CREW",
+    spec_crew_sub: "Single-seat / combat trainer",
+    spec_hardpoints:"HARDPOINTS",
+    spec_hardpoints_sub:"6 wing + 5 fuselage + 2 tip",
+    spec_gun:      "CANNON",
+    spec_gun_sub:  "1,700 rpm, 150 rounds",
+    spec_built:    "BUILT",
+    spec_built_sub:"Tranche 1–3, QUADRIGA",
+    spec_maxspeed: "MAX SPEED",
+    spec_ceiling:  "SERVICE CEILING",
+    spec_range:    "COMBAT RADIUS",
+    spec_range_sub:"Ferry range: 3,790 km",
+    spec_twr:      "THRUST-TO-WEIGHT",
+    spec_twr_sub:  "Normal take-off weight",
+    spec_climbrate:"CLIMB RATE",
+    spec_climbrate_sub:"Rapid altitude gain",
+    spec_supercruise:"SUPERCRUISE",
+    spec_supercruise_sub:"Without afterburner (limited)",
+    spec_g:        "G-LIMITS",
+    spec_g_sub:    "High agility",
+    spec_fuel:     "INTERNAL FUEL",
+    spec_fuel_sub: "+ up to 3 × 1,000 L tanks",
+    spec_radar:    "RADAR",
+    spec_radar_sub:"E-scan, 1,500+ T/R modules",
+    spec_radar_range:"RADAR RANGE",
+    spec_radar_range_sub:"Air target detection (est.)",
+    spec_targets:  "SIMULTANEOUS TARGETS",
+    spec_targets_sub:"Track + engage",
+    spec_irst_sub: "IR tracker 3–5 μm, passive",
+    spec_helmet:   "HELMET",
+    spec_helmet_sub:"HMD, off-boresight missile cueing",
+    spec_ew:       "EW SYSTEM",
+    spec_ew_sub:   "Integrated self-protection",
+    spec_interface:"INTERFACE",
+    spec_interface_sub:"Voice control DVI",
+    spec_datalink: "DATALINK",
+    spec_datalink_sub:"Tactical data exchange",
+    label_03:      "03 // COMPARISON",
+    title_compare: "4/4++ GENERATION<br>FIGHTERS",
+    th_param:      "PARAMETER",
+    cmp_speed:     "Max speed",
+    cmp_radius:    "Combat radius",
+    cmp_twr:       "Thrust-to-weight",
+    cmp_gen:       "Generation",
+    cmp_rcs:       "Stealth (RCS)",
+    cmp_radar:     "Radar type",
+    cmp_load:      "Payload",
+    cmp_g:         "Max G-load",
+    cmp_supercruise:"Supercruise",
+    cmp_country:   "Country",
+    compare_note:  "* Open source data. Some figures are estimates.",
+    chart_twr:     "THRUST-TO-WEIGHT RATIO",
+    chart_radius:  "COMBAT RADIUS (km)",
+    radar_aa:      "AIR-TO-AIR",
+    radar_ag:      "AIR-TO-GROUND",
+    label_04:      "04 // WEAPONS",
+    title_weapons: "COMBAT<br>PAYLOAD",
+    wt_bvr:        "A-A / LONG RANGE",
+    wd_meteor:     "BVRAAM with Ramjet ducted rocket. 100+ km range, active seeker, No-Escape Zone 5× larger than AIM-120C.",
+    wt_mraam:      "A-A / MEDIUM",
+    wd_amraam:     "Active radar seeker. ~180 km range (C-8). Primary NATO BVR missile, fire-and-forget.",
+    wt_sraam:      "A-A / SHORT RANGE",
+    wd_iris:       "±90° off-boresight via helmet cueing, IR seeker. Highly agile, LOAL capability. Striker II HMD integration.",
+    wt_cruise:     "A-G / CRUISE MISSILE",
+    wd_stormshadow:"560+ km range cruise missile. Subsonic, terrain-following, BROACH penetrating warhead.",
+    wt_atk:        "A-G / ANTI-ARMOUR",
+    wd_brimstone:  "Dual-mode seeker (active radar + IR). Salvo: multiple missiles vs multiple targets simultaneously. MBDA.",
+    wt_bomb:       "A-G / PRECISION BOMB",
+    wd_paveway:    "225 kg, GPS/INS + laser guidance. Programmable fuze, low-collateral damage mode.",
+    wt_gun:        "CANNON",
+    wd_bk27:       "27×145 mm, 1,700 rpm, 150 rounds. Gas-operated revolver, linked feed.",
+    wt_nuke:       "NUCLEAR (NATO)",
+    wd_b61:        "Guided tactical nuclear bomb. Germany & Italy carry under NATO nuclear sharing arrangement.",
+    footer_note:   "DATA FROM OPEN SOURCES · FOR INFORMATION PURPOSES ONLY · 2024",
+    radarAxesAA:   ["BVR", "AGILITY", "SPEED", "CLIMB", "WVR", "AVIONICS"],
+    radarAxesAG:   ["RANGE", "PAYLOAD", "ACCURACY", "SURV.", "CRUISE", "STEALTH"],
+  },
+
+  /* ── DEUTSCH / GERMAN ── */
+  de: {
+    nav_3d:        "3D-MODELL",
+    nav_specs:     "TECHNIK",
+    nav_compare:   "VERGLEICH",
+    nav_weapons:   "WAFFEN",
+    classified:    "// OFFEN //",
+    hero_sub:      "Mehrzweckjäger 4++-Generation · AESA · Swing Role",
+    scroll_hint:   "↓ SCROLLEN",
+    label_01:      "01 // 3D-VISUALISIERUNG",
+    title_viewer:  "INTERAKTIVES<br>MODELL",
+    viewer_hint_html: "DRAG — drehen<br>SHIFT+DRAG — schwenken<br>RAD — zoom",
+    viewer_tip:    "← ZIEHEN = DREHEN | RAD = ZOOM | SHIFT+DRAG = SCHWENKEN",
+    btn_reset:     "RESET",
+    btn_auto:      "AUTO",
+    btn_top:       "OBEN",
+    btn_side:      "SEITE",
+    btn_front:     "VORNE",
+    d_length:      "LÄNGE",
+    d_length_sub:  "52,4 ft",
+    d_span:        "SPANNWEITE",
+    d_height:      "HÖHE",
+    d_speed:       "MAX. GESCHW.",
+    d_speed_sub:   "≈ 2.125 km/h",
+    d_thrust:      "SCHUB (2×EJ200)",
+    d_thrust_sub:  "mit Nachbrenner",
+    d_payload:     "KAMPFLAST",
+    label_02:      "02 // TECHNISCHE DATEN",
+    title_specs:   "TECHNISCHE<br>DATEN",
+    tab_general:   "ALLGEMEIN",
+    tab_flight:    "FLUGLEISTUNG",
+    tab_avionics:  "AVIONIK",
+    spec_maker:    "HERSTELLER",
+    spec_gen:      "GENERATION",
+    spec_gen_sub:  "Mehrrollen-Multimission",
+    spec_engine:   "TRIEBWERKE",
+    spec_engine_sub:"Eurojet, 90 kN mit Nachbrenner",
+    spec_emptyweight:"LEERGEWICHT",
+    spec_emptyweight_sub:"MTOW ~23.500 kg",
+    spec_crew:     "BESATZUNG",
+    spec_crew_sub: "Einzel / Ausbildungs-Kampfjet",
+    spec_hardpoints:"AUSSENLASTSTATIONEN",
+    spec_hardpoints_sub:"6 Flügel + 5 Rumpf + 2 Spitze",
+    spec_gun:      "KANONE",
+    spec_gun_sub:  "1.700 Schuß/min, 150 Patronen",
+    spec_built:    "GEBAUT",
+    spec_built_sub:"Tranche 1–3, QUADRIGA",
+    spec_maxspeed: "MAX. GESCHWINDIGKEIT",
+    spec_ceiling:  "GIPFELHÖHE",
+    spec_range:    "KAMPFRADIUS",
+    spec_range_sub:"Überführung: 3.790 km",
+    spec_twr:      "SCHUBGEWICHTSVERHÄLTNIS",
+    spec_twr_sub:  "Normales Abfluggewicht",
+    spec_climbrate:"STEIGLEISTUNG",
+    spec_climbrate_sub:"Schneller Höhengewinn",
+    spec_supercruise:"SUPERKRUISER",
+    spec_supercruise_sub:"Ohne Nachbrenner (begrenzt)",
+    spec_g:        "G-GRENZWERT",
+    spec_g_sub:    "Hohe Agilität",
+    spec_fuel:     "INTERNER KRAFTSTOFF",
+    spec_fuel_sub: "+ bis 3 × 1.000 L Tanks",
+    spec_radar:    "RADAR",
+    spec_radar_sub:"E-scan, 1.500+ T/R-Module",
+    spec_radar_range:"RADARREICHWEITE",
+    spec_radar_range_sub:"Luftziel-Erfassung (Schätzung)",
+    spec_targets:  "GLEICHZEIT. ZIELE",
+    spec_targets_sub:"Verfolgung + Bekämpfung",
+    spec_irst_sub: "IR-Tracker 3–5 μm, passiv",
+    spec_helmet:   "HELM",
+    spec_helmet_sub:"HMD, Helmavisier für Raketen",
+    spec_ew:       "EW-SYSTEM",
+    spec_ew_sub:   "Integrierter Selbstschutz",
+    spec_interface:"SCHNITTSTELLE",
+    spec_interface_sub:"Sprachsteuerung DVI",
+    spec_datalink: "DATENLINK",
+    spec_datalink_sub:"Taktischer Datenaustausch",
+    label_03:      "03 // VERGLEICH",
+    title_compare: "KAMPFJETS<br>4/4++ GENERATION",
+    th_param:      "PARAMETER",
+    cmp_speed:     "Max. Geschwindigkeit",
+    cmp_radius:    "Kampfradius",
+    cmp_twr:       "Schubgewicht",
+    cmp_gen:       "Generation",
+    cmp_rcs:       "Tarnkappen (RCS)",
+    cmp_radar:     "Radartyp",
+    cmp_load:      "Kampflast",
+    cmp_g:         "Max. G-Belastung",
+    cmp_supercruise:"Superkruisen",
+    cmp_country:   "Land",
+    compare_note:  "* Öffentlich zugängliche Daten. Einige Angaben sind Schätzungen.",
+    chart_twr:     "SCHUBGEWICHTSVERHÄLTNIS",
+    chart_radius:  "KAMPFRADIUS (km)",
+    radar_aa:      "LUFT — LUFT",
+    radar_ag:      "LUFT — BODEN",
+    label_04:      "04 // WAFFEN",
+    title_weapons: "KAMPF-<br>BEWAFFNUNG",
+    wt_bvr:        "L-L / LANGSTRECKE",
+    wd_meteor:     "BVRAAM mit Ramjet-Staustrahl. 100+ km Reichweite, aktiver Sucher, No-Escape Zone 5× größer als AIM-120C.",
+    wt_mraam:      "L-L / MITTELSTRECKE",
+    wd_amraam:     "Aktives Radar-Sucher. ~180 km (C-8). Wichtigste NATO-BVR-Rakete, fire-and-forget.",
+    wt_sraam:      "L-L / KURZSTRECKE",
+    wd_iris:       "±90° Offside via Helm, IR-Sucher. Hochmanövrierbar, LOAL. Integration mit Striker II HMD.",
+    wt_cruise:     "L-B / MARSCHFLUGKÖRPER",
+    wd_stormshadow:"560+ km Reichweite. Unterschallflug, geländefolgendes Flug, BROACH-Gefechtskopf.",
+    wt_atk:        "L-B / PANZERABWEHR",
+    wd_brimstone:  "Dualsucher (Radar + IR). Salven: mehrere Raketen gegen mehrere Ziele. MBDA.",
+    wt_bomb:       "L-B / PRÄZISIONSBOMBE",
+    wd_paveway:    "225 kg, GPS/INS + Laserführung. Programmierbarer Zünder, minimale Kollateralschäden.",
+    wt_gun:        "KANONE",
+    wd_bk27:       "27×145 mm, 1.700 Schuß/min, 150 Patronen. Gasdrucklader, Gurtzuführung.",
+    wt_nuke:       "NUKLEAR (NATO)",
+    wd_b61:        "Geführte taktische Atombombe. Deutschland & Italien im NATO Nuclear Sharing.",
+    footer_note:   "DATEN AUS ÖFFENTLICHEN QUELLEN · NUR ZU INFORMATIONSZWECKEN · 2024",
+    radarAxesAA:   ["BVR", "AGILITÄT", "GESCHW.", "STEIGEN", "WVR", "AVIONIK"],
+    radarAxesAG:   ["RADIUS", "LAST", "PRÄZISION", "ÜBERL.", "KREUZ.", "TARNUNG"],
+  },
+
+  /* ── FRANÇAIS / FRENCH ── */
+  fr: {
+    nav_3d:        "MODÈLE 3D",
+    nav_specs:     "SPECS",
+    nav_compare:   "COMPARATIF",
+    nav_weapons:   "ARMEMENT",
+    classified:    "// NON-CLASSIFIÉ //",
+    hero_sub:      "Chasseur multirôle de 4e gen.++ · AESA · Swing Role",
+    scroll_hint:   "↓ DÉFILER",
+    label_01:      "01 // VISUALISATION 3D",
+    title_viewer:  "MODÈLE<br>INTERACTIF",
+    viewer_hint_html: "DRAG — rotation<br>SHIFT+DRAG — panoramique<br>MOLETTE — zoom",
+    viewer_tip:    "← GLISSER = ROTATION | MOLETTE = ZOOM | SHIFT+DRAG = PAN",
+    btn_reset:     "RESET",
+    btn_auto:      "AUTO",
+    btn_top:       "DESSUS",
+    btn_side:      "CÔTÉ",
+    btn_front:     "AVANT",
+    d_length:      "LONGUEUR",
+    d_length_sub:  "52,4 pi",
+    d_span:        "ENVERGURE",
+    d_height:      "HAUTEUR",
+    d_speed:       "VIT. MAX.",
+    d_speed_sub:   "≈ 2 125 km/h",
+    d_thrust:      "POUSSÉE (2×EJ200)",
+    d_thrust_sub:  "avec postcombustion",
+    d_payload:     "CHARGE UTILE",
+    label_02:      "02 // CARACTÉRISTIQUES",
+    title_specs:   "DONNÉES<br>TECHNIQUES",
+    tab_general:   "GÉNÉRAL",
+    tab_flight:    "VOL",
+    tab_avionics:  "AVIONIQUE",
+    spec_maker:    "FABRICANT",
+    spec_gen:      "GÉNÉRATION",
+    spec_gen_sub:  "Multirôle polyvalent",
+    spec_engine:   "MOTEURS",
+    spec_engine_sub:"Eurojet, 90 kN avec PC",
+    spec_emptyweight:"MASSE À VIDE",
+    spec_emptyweight_sub:"MTOW ~23 500 kg",
+    spec_crew:     "ÉQUIPAGE",
+    spec_crew_sub: "Monoplace / biplace entraîn.",
+    spec_hardpoints:"POINTS D'EMPORT",
+    spec_hardpoints_sub:"6 aile + 5 fuselage + 2 bout",
+    spec_gun:      "CANON",
+    spec_gun_sub:  "1 700 coups/min, 150 obus",
+    spec_built:    "CONSTRUITS",
+    spec_built_sub:"Tranche 1–3, QUADRIGA",
+    spec_maxspeed: "VITESSE MAX.",
+    spec_ceiling:  "PLAFOND PRATIQUE",
+    spec_range:    "RAYON D'ACTION",
+    spec_range_sub:"Convoyage : 3 790 km",
+    spec_twr:      "RAPPORT POUSSÉE/POIDS",
+    spec_twr_sub:  "Masse normale au décollage",
+    spec_climbrate:"VITESSE ASCENSION",
+    spec_climbrate_sub:"Montée rapide en altitude",
+    spec_supercruise:"SUPERCRUISE",
+    spec_supercruise_sub:"Sans postcombustion (limit.)",
+    spec_g:        "FACTEUR DE CHARGE",
+    spec_g_sub:    "Haute agilité",
+    spec_fuel:     "CARBURANT INTERNE",
+    spec_fuel_sub: "+ jusqu'à 3 × 1 000 L réservoirs",
+    spec_radar:    "RADAR",
+    spec_radar_sub:"E-scan, 1 500+ modules T/R",
+    spec_radar_range:"PORTÉE RADAR",
+    spec_radar_range_sub:"Détection cible aérienne (est.)",
+    spec_targets:  "CIBLES SIMULT.",
+    spec_targets_sub:"Pistage + engagement",
+    spec_irst_sub: "Détecteur IR 3–5 μm, passif",
+    spec_helmet:   "CASQUE",
+    spec_helmet_sub:"HMD, visée casque pour missiles",
+    spec_ew:       "GUERRE ÉLECTRONIQUE",
+    spec_ew_sub:   "Auto-protection intégrée",
+    spec_interface:"INTERFACE",
+    spec_interface_sub:"Commande vocale DVI",
+    spec_datalink: "LIAISON DE DONNÉES",
+    spec_datalink_sub:"Échange tactique de données",
+    label_03:      "03 // COMPARATIF",
+    title_compare: "CHASSEURS<br>4e/4e++ GÉN.",
+    th_param:      "PARAMÈTRE",
+    cmp_speed:     "Vitesse max.",
+    cmp_radius:    "Rayon d'action",
+    cmp_twr:       "Rapport poussée/poids",
+    cmp_gen:       "Génération",
+    cmp_rcs:       "Furtivité (SER)",
+    cmp_radar:     "Type de radar",
+    cmp_load:      "Charge utile",
+    cmp_g:         "Facteur de charge max.",
+    cmp_supercruise:"Supercruise",
+    cmp_country:   "Pays",
+    compare_note:  "* Sources ouvertes. Certaines valeurs sont estimées.",
+    chart_twr:     "RAPPORT POUSSÉE/POIDS",
+    chart_radius:  "RAYON D'ACTION (km)",
+    radar_aa:      "AIR — AIR",
+    radar_ag:      "AIR — SOL",
+    label_04:      "04 // ARMEMENT",
+    title_weapons: "CHARGE<br>DE COMBAT",
+    wt_bvr:        "A-A / LONGUE PORTÉE",
+    wd_meteor:     "BVRAAM à moteur Ramjet. Portée 100+ km, autodirecteur actif, Zone de Non-Évasion 5× supérieure à AIM-120C.",
+    wt_mraam:      "A-A / MOYENNE PORTÉE",
+    wd_amraam:     "Autodirecteur radar actif. ~180 km (C-8). Principal missile BVR OTAN, tire-et-oublie.",
+    wt_sraam:      "A-A / COURTE PORTÉE",
+    wd_iris:       "Visée casque ±90°, autodirecteur IR. Très manœuvrant, LOAL. Intégration HMD Striker II.",
+    wt_cruise:     "A-S / MISSILE DE CROISIÈRE",
+    wd_stormshadow:"Portée 560+ km. Subsonique, suivi de terrain, ogive pénétrante BROACH.",
+    wt_atk:        "A-S / ANTICHAR",
+    wd_brimstone:  "Autodirecteur bi-mode (radar + IR). Salve : plusieurs missiles vs plusieurs cibles. MBDA.",
+    wt_bomb:       "A-S / BOMBE GUIDÉE",
+    wd_paveway:    "225 kg, GPS/INS + guidage laser. Fusée programmable, dommages collatéraux réduits.",
+    wt_gun:        "CANON",
+    wd_bk27:       "27×145 mm, 1 700 coups/min, 150 obus. Revolver à gaz, alimentation par lien.",
+    wt_nuke:       "NUCLÉAIRE (OTAN)",
+    wd_b61:        "Bombe nucléaire tactique guidée. Allemagne & Italie porteurs dans le partage nucléaire OTAN.",
+    footer_note:   "DONNÉES DE SOURCES OUVERTES · À DES FINS INFORMATIVES UNIQUEMENT · 2024",
+    radarAxesAA:   ["BVR", "AGILITÉ", "VITESSE", "MONTÉE", "WVR", "AVIONIQUE"],
+    radarAxesAG:   ["RAYON", "CHARGE", "PRÉCISION", "SURVIE", "CROISIÈRE", "FURTIVITÉ"],
+  }
+};
+
+/* Текущий язык / Current language */
+let currentLang = 'ru';
+
+/**
+ * Применить перевод ко всем элементам с data-i18n
+ * Apply translation to all elements with data-i18n attribute
+ * @param {string} lang - код языка / language code ('ru','en','de','fr')
+ */
+function setLang(lang) {
+  currentLang = lang;
+  const dict = i18n[lang];
+
+  /* Обновляем атрибут lang у html / Update html lang attribute */
+  document.documentElement.lang = lang;
+
+  /* Перебираем все элементы с переводом / Iterate all translatable elements */
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (dict[key] !== undefined) {
+      /* Поддержка HTML-строк (переносы строк) / Support HTML strings (line breaks) */
+      if (key.endsWith('_html') || key === 'viewer_hint_html') {
+        el.innerHTML = dict[key];
+      } else {
+        el.innerHTML = dict[key]; // innerHTML поддерживает <br> / supports <br>
+      }
+    }
+  });
+
+  /* Обновляем кнопки языка / Update language buttons */
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent === lang.toUpperCase());
+  });
+
+  /* Перерисовываем радарные диаграммы с новыми подписями осей
+     Redraw radar charts with new axis labels */
+  drawRadar('radarAA', buildRadarData('aa', lang));
+  drawRadar('radarAG', buildRadarData('ag', lang));
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   БЛОК 2: 3D ВЬЮВЕР — МОДЕЛЬ EUROFIGHTER
+   BLOCK 2: 3D VIEWER — EUROFIGHTER MODEL
+
+   Используется wireframe рендеринг на HTML5 Canvas.
+   Uses wireframe rendering on HTML5 Canvas.
+
+   Система координат: X = право, Y = вверх, Z = нос самолёта назад
+   Coordinate system: X = right, Y = up, Z = tail (+) to nose (-)
+
+   Масштаб: 1 единица ≈ 1 метр
+   Scale: 1 unit ≈ 1 meter
+   ────────────────────────────────────────────────────────────────── */
+
+const canvas3d  = document.getElementById('plane3d');
+const canvasCtx = canvas3d.getContext('2d');
+const wrap3d    = document.getElementById('canvasWrap');
+
+/* Состояние вьювера / Viewer state */
+let rotY      = -30;   // Горизонтальное вращение (рыскание) / Horizontal rotation (yaw)
+let rotX      =  15;   // Вертикальный наклон (тангаж) / Vertical tilt (pitch)
+let zoom      =  1.0;  // Масштаб / Scale factor
+let panX      =  0;    // Смещение по X / X pan offset
+let panY      =  0;    // Смещение по Y / Y pan offset
+let autoSpin  = true;  // Автовращение / Auto-rotation flag
+let isDragging= false;
+let lastMX    = 0;
+let lastMY    = 0;
+
+/**
+ * Синхронизация размеров canvas с контейнером
+ * Sync canvas dimensions with container
+ */
+function resizeCanvas() {
+  canvas3d.width  = wrap3d.clientWidth;
+  canvas3d.height = wrap3d.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', () => { resizeCanvas(); renderFrame(); });
+
+/* ──── ГЕОМЕТРИЯ САМОЛЁТА / AIRCRAFT GEOMETRY ────
+   Вершины описывают реальные точки конструкции EF-2000:
+   Vertices describe real structural points of EF-2000:
+   - Треугольное дельта-крыло (без горизонтального оперения)
+   - Triangular delta wing (no horizontal tail)
+   - Малые переднеприжимные (canard) ПГО
+   - Small forward-swept canard foreplanes
+   - Двойные хвостовые кили / Twin canted tail fins
+   - Фюзеляж с двумя двигательными гондолами
+   - Fuselage with twin engine nacelles
+   - Воздухозаборники под фюзеляжем
+   - Chin-mounted engine intakes
+*/
+function buildVertices() {
+  /* ── ФЮЗЕЛЯЖ (центральная ось Y=0, Z от хвоста +8 до носа -9)
+        FUSELAGE (centerline Y=0, Z from tail +8 to nose -9) */
+  const fus = [
+    /* idx 0*/  [ 0,    0,    -9.0],  // Острие носа / Nose tip
+    /* idx 1*/  [ 0,    0.2,  -7.5],  // Нос верх / Nose top
+    /* idx 2*/  [ 0,    0.55, -5.5],  // Кабина перед / Cockpit front
+    /* idx 3*/  [ 0,    0.65, -3.5],  // Кабина зад / Cockpit rear
+    /* idx 4*/  [ 0,    0.6,  -1.0],  // Верх центр / Top center
+    /* idx 5*/  [ 0,    0.55,  2.0],  // Верх между крыльями / Top between wings
+    /* idx 6*/  [ 0,    0.45,  5.0],  // Верх хвост / Rear top
+    /* idx 7*/  [ 0,    0.2,   8.0],  // Хвост / Tail end
+
+    /* idx 8*/  [ 0,   -0.4,  -6.5],  // Низ нос / Bottom nose
+    /* idx 9*/  [ 0,   -0.75, -3.0],  // Низ перед / Bottom front
+    /* idx 10*/ [ 0,   -0.75,  1.5],  // Низ центр / Bottom center
+    /* idx 11*/ [ 0,   -0.5,   5.5],  // Низ хвост / Bottom rear
+  ];
+
+  /* ── ПГО (CANARD) — передние небольшие трапециевидные крылья
+        CANARD FOREPLANES — small trapezoidal front wings
+        Расположены на уровне Y=0, наклон LE ≈ 55°
+        Located at Y=0, LE sweep ≈ 55° */
+  const canard = [
+    /* idx 12*/ [-2.4,  0.0,  -5.2],  // Левая законцовка / Left tip
+    /* idx 13*/ [ 2.4,  0.0,  -5.2],  // Правая законцовка / Right tip
+    /* idx 14*/ [-0.7,  0.0,  -6.2],  // Левый корень перед / Left root LE
+    /* idx 15*/ [ 0.7,  0.0,  -6.2],  // Правый корень перед / Right root LE
+    /* idx 16*/ [-0.7,  0.0,  -4.0],  // Левый корень зад / Left root TE
+    /* idx 17*/ [ 0.7,  0.0,  -4.0],  // Правый корень зад / Right root TE
+  ];
+
+  /* ── ДЕЛЬТА-КРЫЛО (DELTA WING)
+        Стреловидность по ПК ≈ 55°, без горизонт. оперения
+        Leading edge sweep ≈ 55°, no horizontal tail (pure delta)
+        4 точки каждой стороны: корень ПК, законцовка, зад законцовки, корень ЗК
+        4 points each side: root LE, tip, tip TE, root TE */
+  const wing = [
+    /* idx 18*/ [-5.5,  0.0,   1.5],  // Лев. законцовка / Left tip
+    /* idx 19*/ [ 5.5,  0.0,   1.5],  // Прав. законцовка / Right tip
+    /* idx 20*/ [-0.95, 0.0,  -2.5],  // Лев. корень ПК / Left root LE
+    /* idx 21*/ [ 0.95, 0.0,  -2.5],  // Прав. корень ПК / Right root LE
+    /* idx 22*/ [-5.5,  0.0,   5.0],  // Лев. ЗК законцовка / Left tip TE
+    /* idx 23*/ [ 5.5,  0.0,   5.0],  // Прав. ЗК законцовка / Right tip TE
+    /* idx 24*/ [-0.95, 0.0,   5.5],  // Лев. корень ЗК / Left root TE
+    /* idx 25*/ [ 0.95, 0.0,   5.5],  // Прав. корень ЗК / Right root TE
+
+    /* Средняя точка крыла для деталей / Mid-wing detail points */
+    /* idx 26*/ [-3.5,  0.0,   3.8],  // Лев. задний элерон внеш. / L aileron outer
+    /* idx 27*/ [ 3.5,  0.0,   3.8],  // Прав. задний элерон внеш. / R aileron outer
+  ];
+
+  /* ── ХВОСТОВЫЕ КИЛИ (TWIN TAIL FINS)
+        Два наклонных киля под углом ±10° к вертикали
+        Two canted fins at ±10° from vertical
+        Трапециевидная форма / Trapezoidal shape */
+  const fins = [
+    /* idx 28*/ [-0.55,  0.5,   3.5],  // Лев. основание ПК / L root LE
+    /* idx 29*/ [ 0.55,  0.5,   3.5],  // Прав. основание ПК / R root LE
+    /* idx 30*/ [-0.55,  0.5,   7.0],  // Лев. основание ЗК / L root TE
+    /* idx 31*/ [ 0.55,  0.5,   7.0],  // Прав. основание ЗК / R root TE
+    /* idx 32*/ [-1.1,   3.2,   4.5],  // Лев. вершина ПК / L apex LE
+    /* idx 33*/ [ 1.1,   3.2,   4.5],  // Прав. вершина ПК / R apex LE
+    /* idx 34*/ [-0.8,   3.2,   7.0],  // Лев. вершина ЗК / L apex TE
+    /* idx 35*/ [ 0.8,   3.2,   7.0],  // Прав. вершина ЗК / R apex TE
+  ];
+
+  /* ── ДВИГАТЕЛЬНЫЕ ГОНДОЛЫ И СОПЛА
+        ENGINE NACELLES AND NOZZLES
+        Два двигателя рядом под фюзеляжем
+        Twin engines side-by-side below fuselage */
+  const engines = [
+    /* idx 36*/ [-0.7,  -0.55,  5.5],  // Лев. сопло перед / L nozzle front
+    /* idx 37*/ [ 0.7,  -0.55,  5.5],  // Прав. сопло перед / R nozzle front
+    /* idx 38*/ [-0.7,  -0.55,  8.2],  // Лев. сопло зад / L nozzle rear
+    /* idx 39*/ [ 0.7,  -0.55,  8.2],  // Прав. сопло зад / R nozzle rear
+    /* idx 40*/ [-0.35, -0.55,  8.2],  // Лев. сопло внутр. / L inner nozzle
+    /* idx 41*/ [ 0.35, -0.55,  8.2],  // Прав. сопло внутр. / R inner nozzle
+  ];
+
+  /* ── ВОЗДУХОЗАБОРНИКИ (CHIN INTAKES)
+        Два воздухозаборника снизу-спереди фюзеляжа
+        Twin chin intakes under fuselage nose */
+  const intakes = [
+    /* idx 42*/ [-0.9,  -0.6,  -5.5],  // Лев. наруж. передний / L outer front
+    /* idx 43*/ [ 0.9,  -0.6,  -5.5],  // Прав. наруж. передний / R outer front
+    /* idx 44*/ [-0.9,  -0.6,  -2.5],  // Лев. наруж. задний / L outer rear
+    /* idx 45*/ [ 0.9,  -0.6,  -2.5],  // Прав. наруж. задний / R outer rear
+    /* idx 46*/ [-0.3,  -0.65, -5.5],  // Лев. внутр. передний / L inner front
+    /* idx 47*/ [ 0.3,  -0.65, -5.5],  // Прав. внутр. передний / R inner front
+    /* idx 48*/ [-0.3,  -0.65, -2.5],  // Лев. внутр. задний / L inner rear
+    /* idx 49*/ [ 0.3,  -0.65, -2.5],  // Прав. внутр. задний / R inner rear
+  ];
+
+  /* Объединяем все вершины в единый массив
+     Concatenate all vertices into one array */
+  return [...fus, ...canard, ...wing, ...fins, ...engines, ...intakes];
+}
+
+/* ──── РЁБРА КАРКАСА / WIREFRAME EDGES ────
+   Каждая пара [a, b] — ребро между вершинами с индексами a и b
+   Each pair [a, b] is an edge between vertices at indices a and b */
+const wireEdges = [
+  // Фюзеляж верх / Fuselage top spine
+  [0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],
+  // Фюзеляж низ / Fuselage bottom
+  [0,8],[8,9],[9,10],[10,11],[11,7],
+  // Поперечины фюзеляжа / Fuselage frames
+  [1,8],[2,9],[4,10],[6,11],
+
+  // ПГО лев. / L canard
+  [14,12],[12,16],[16,14],
+  // ПГО прав. / R canard
+  [15,13],[13,17],[17,15],
+  // Основание ПГО / Canard root connection
+  [14,15],[16,17],
+
+  // Дельта-крыло лев. / L delta wing
+  [20,18],[18,22],[22,24],[24,20],
+  // Дельта-крыло прав. / R delta wing
+  [21,19],[19,23],[23,25],[25,21],
+  // Лонжерон крыла / Wing spar
+  [20,21],[24,25],
+  // Линия элеронов / Aileron line
+  [18,26],[26,22],[19,27],[27,23],
+
+  // Хвостовые кили лев. / L fin
+  [28,32],[32,34],[34,30],[30,28],
+  // Хвостовые кили прав. / R fin
+  [29,33],[33,35],[35,31],[31,29],
+  // Диагональ киля для жёсткости / Fin diagonal brace
+  [28,34],[29,35],
+  // Основание килей / Fin base
+  [28,29],[30,31],
+
+  // Сопла / Nozzles
+  [36,38],[37,39],   // Боковые / Outer edges
+  [36,37],[38,39],   // Поперечины / Cross braces
+  [40,41],           // Внутренняя перемычка / Inner bridge
+  [38,40],[39,41],   // Внутр. соединения / Inner connections
+
+  // Воздухозаборники / Intakes
+  [42,44],[43,45],   // Внешние борта / Outer sides
+  [46,48],[47,49],   // Внутренние борта / Inner sides
+  [42,46],[43,47],   // Передние кромки / Front lips
+  [44,48],[45,49],   // Задние кромки / Rear lips
+  [42,43],[44,45],   // Внешние верх / Outer top
+];
+
+/* ──── ГРАНИ ДЛЯ ЗАЛИВКИ / FILLED FACES ────
+   Полупрозрачная заливка для основных поверхностей
+   Semi-transparent fill for main surfaces */
+const wireFaces = [
+  // Дельта-крыло левое / Left delta wing
+  { v: [20, 18, 22, 24], col: 'rgba(255,184,0,0.055)' },
+  // Дельта-крыло правое / Right delta wing
+  { v: [21, 19, 23, 25], col: 'rgba(255,184,0,0.055)' },
+  // ПГО левое / Left canard
+  { v: [14, 12, 16],     col: 'rgba(255,184,0,0.09)'  },
+  // ПГО правое / Right canard
+  { v: [15, 13, 17],     col: 'rgba(255,184,0,0.09)'  },
+  // Левый киль / Left fin
+  { v: [28, 32, 34, 30], col: 'rgba(255,184,0,0.10)'  },
+  // Правый киль / Right fin
+  { v: [29, 33, 35, 31], col: 'rgba(255,184,0,0.10)'  },
+];
+
+/**
+ * Поворот вектора по осям Y (рыскание) затем X (тангаж)
+ * Rotate vector by Y axis (yaw) then X axis (pitch)
+ * @param {number[]} v - вектор [x,y,z] / vector [x,y,z]
+ * @returns {number[]} повёрнутый вектор / rotated vector
+ */
+function rotateVec([x, y, z]) {
+  const ry = rotY * Math.PI / 180;
+  const rx = rotX * Math.PI / 180;
+
+  // Поворот вокруг оси Y / Rotate around Y axis
+  let x1 = x * Math.cos(ry) + z * Math.sin(ry);
+  let z1 = -x * Math.sin(ry) + z * Math.cos(ry);
+
+  // Поворот вокруг оси X / Rotate around X axis
+  let y1 = y * Math.cos(rx) - z1 * Math.sin(rx);
+  let z2 = y * Math.sin(rx) + z1 * Math.cos(rx);
+
+  return [x1, y1, z2];
+}
+
+/**
+ * Ортографическая проекция 3D→2D
+ * Orthographic projection 3D→2D
+ * @param {number[]} rv - повёрнутый вектор / rotated vector
+ * @returns {number[]} пиксельные координаты / pixel coordinates [px, py]
+ */
+function project([rx, ry]) {
+  const scale = 36 * zoom;
+  return [
+    canvas3d.width  / 2 + panX + rx * scale,
+    canvas3d.height / 2 + panY - ry * scale,  // Y инвертирован / Y inverted
+  ];
+}
+
+/**
+ * Основная функция рендера одного кадра
+ * Main function to render one frame
+ */
+function renderFrame() {
+  const W = canvas3d.width, H = canvas3d.height;
+  canvasCtx.clearRect(0, 0, W, H);
+
+  /* Фоновое свечение / Background glow */
+  const cx = W / 2 + panX, cy = H / 2 + panY;
+  const grd = canvasCtx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.45);
+  grd.addColorStop(0, 'rgba(255,184,0,0.035)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  canvasCtx.fillStyle = grd;
+  canvasCtx.fillRect(0, 0, W, H);
+
+  /* Получаем вершины, поворачиваем и проецируем
+     Get vertices, rotate and project */
+  const verts    = buildVertices();
+  const rotated  = verts.map(rotateVec);
+  const proj     = rotated.map(([rx, ry]) => project([rx, ry]));
+
+  /* Рисуем заливку граней / Draw face fills */
+  wireFaces.forEach(({ v, col }) => {
+    canvasCtx.beginPath();
+    const [px, py] = proj[v[0]];
+    canvasCtx.moveTo(px, py);
+    for (let i = 1; i < v.length; i++) {
+      canvasCtx.lineTo(proj[v[i]][0], proj[v[i]][1]);
+    }
+    canvasCtx.closePath();
+    canvasCtx.fillStyle = col;
+    canvasCtx.fill();
+  });
+
+  /* Рисуем рёбра с учётом глубины (освещение)
+     Draw edges with depth-based brightness (lighting) */
+  wireEdges.forEach(([a, b]) => {
+    const [pa, pb] = [proj[a], proj[b]];
+
+    /* Яркость зависит от средней Z-координаты (псевдо-освещение)
+       Brightness depends on average Z (pseudo-lighting) */
+    const avgZ     = (rotated[a][2] + rotated[b][2]) * 0.5;
+    const bright   = Math.max(0.28, Math.min(1.0, 0.72 + avgZ * 0.038));
+    const g        = Math.floor(Math.min(255, 180 + avgZ * 4));
+
+    canvasCtx.strokeStyle = `rgba(255,${g},0,${bright})`;
+    canvasCtx.lineWidth   = 1.05;
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(pa[0], pa[1]);
+    canvasCtx.lineTo(pb[0], pb[1]);
+    canvasCtx.stroke();
+  });
+
+  /* Рисуем вершины как точки / Draw vertices as dots */
+  proj.forEach(([px, py], i) => {
+    const z = rotated[i][2];
+    canvasCtx.beginPath();
+    canvasCtx.arc(px, py, 1.4, 0, Math.PI * 2);
+    canvasCtx.fillStyle = `rgba(255,220,80,${0.28 + z * 0.018})`;
+    canvasCtx.fill();
+  });
+
+  /* Обновляем HUD / Update HUD display */
+  document.getElementById('hudBar').textContent =
+    `ROT: ${(rotY % 360).toFixed(0)}° | ELEV: ${rotX.toFixed(0)}° | ZOOM: ${zoom.toFixed(1)}x`;
+}
+
+/* ──── УПРАВЛЕНИЕ МЫШЬЮ / MOUSE CONTROLS ──── */
+
+wrap3d.addEventListener('mousedown', e => {
+  isDragging = true;
+  lastMX = e.clientX;
+  lastMY = e.clientY;
+  /* При взаимодействии отключаем авто-вращение
+     Disable auto-rotation on user interaction */
+  autoSpin = false;
+  document.getElementById('autoBtn').dataset.on = 'false';
+});
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastMX;
+  const dy = e.clientY - lastMY;
+
+  if (e.shiftKey) {
+    /* SHIFT зажат — панорамирование / SHIFT held — pan */
+    panX += dx;
+    panY += dy;
+  } else {
+    /* Обычное перетаскивание — вращение / Regular drag — rotate */
+    rotY += dx * 0.48;
+    rotX -= dy * 0.48;
+    rotX  = Math.max(-89, Math.min(89, rotX)); // Ограничение клипа / Clip limit
+  }
+  lastMX = e.clientX;
+  lastMY = e.clientY;
+  renderFrame();
+});
+
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+/* Зум колесом / Mouse wheel zoom */
+wrap3d.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.max(0.3, Math.min(3.5, zoom - e.deltaY * 0.001));
+  renderFrame();
+}, { passive: false });
+
+/* ──── УПРАВЛЕНИЕ КАСАНИЕМ / TOUCH CONTROLS ──── */
+let lastTX = 0, lastTY = 0, lastTouchDist = 0;
+
+wrap3d.addEventListener('touchstart', e => {
+  autoSpin = false;
+  if (e.touches.length === 1) {
+    lastTX = e.touches[0].clientX;
+    lastTY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    /* Жест щипка / Pinch gesture */
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    lastTouchDist = Math.hypot(dx, dy);
+  }
+}, { passive: true });
+
+wrap3d.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    const dx = e.touches[0].clientX - lastTX;
+    const dy = e.touches[0].clientY - lastTY;
+    rotY += dx * 0.48;
+    rotX -= dy * 0.48;
+    rotX  = Math.max(-89, Math.min(89, rotX));
+    lastTX = e.touches[0].clientX;
+    lastTY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    const dx   = e.touches[0].clientX - e.touches[1].clientX;
+    const dy   = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    zoom = Math.max(0.3, Math.min(3.5, zoom * (dist / lastTouchDist)));
+    lastTouchDist = dist;
+  }
+  renderFrame();
+}, { passive: false });
+
+/* ──── КНОПКИ УПРАВЛЕНИЯ / CONTROL BUTTONS ──── */
+
+/** Сброс вида / Reset view */
+function resetView() {
+  rotY = -30; rotX = 15; zoom = 1.0; panX = 0; panY = 0;
+  autoSpin = true;
+  renderFrame();
+}
+
+/** Вкл/выкл авто-вращение / Toggle auto-rotation */
+function toggleAuto() {
+  autoSpin = !autoSpin;
+}
+
+/**
+ * Установить предустановленный вид / Set preset view
+ * @param {'top'|'side'|'front'} preset
+ */
+function setPreset(preset) {
+  autoSpin = false;
+  panX = 0; panY = 0;
+  switch (preset) {
+    case 'top':   rotY =   0; rotX =  89; zoom = 0.75; break;
+    case 'side':  rotY =  90; rotX =   3; zoom = 1.0;  break;
+    case 'front': rotY =   0; rotX =   3; zoom = 1.1;  break;
+  }
+  renderFrame();
+}
+
+/* ──── ОСНОВНОЙ ЦИКЛ АНИМАЦИИ / MAIN ANIMATION LOOP ──── */
+function animLoop() {
+  if (autoSpin) {
+    rotY += 0.28;  // Скорость авто-вращения / Auto-rotation speed
+    renderFrame();
+  }
+  requestAnimationFrame(animLoop);
+}
+renderFrame();
+animLoop();
+
+/* ──────────────────────────────────────────────────────────────────
+   БЛОК 3: РАДАРНЫЕ ДИАГРАММЫ / BLOCK 3: RADAR CHARTS
+   Отрисовка паукообразных диаграмм на canvas
+   Drawing spider/radar charts on canvas
+   ────────────────────────────────────────────────────────────────── */
+
+/**
+ * Строит данные для радарной диаграммы
+ * Builds data for radar chart
+ * @param {'aa'|'ag'} type - тип: воздух-воздух / air-to-air or air-to-ground
+ * @param {string} lang - код языка / language code
+ * @returns {object} данные диаграммы / chart data
+ */
+function buildRadarData(type, lang) {
+  const d = i18n[lang];
+  const axes = type === 'aa' ? d.radarAxesAA : d.radarAxesAG;
+
+  /* Данные самолётов (оценки 0–10) / Aircraft data (0–10 estimates) */
+  const planes = type === 'aa'
+    ? [
+        /* name,          color,           values [по осям / per axis] */
+        { n: 'TYPHOON',   c: '#ffb800', v: [9.0, 9.2, 8.5, 9.5, 9.0, 9.0] },
+        { n: 'F-35A',     c: '#7eb8f0', v: [9.5, 6.2, 7.0, 7.0, 7.0,10.0] },
+        { n: 'RAFALE F4', c: '#70e8a0', v: [8.5, 8.5, 8.0, 8.5, 9.0, 9.0] },
+        { n: 'GRIPEN E',  c: '#e870b8', v: [8.0, 8.0, 8.5, 8.5, 8.0, 8.5] },
+        { n: 'СУ-35С',    c: '#f07050', v: [7.5, 9.5, 9.5, 9.0, 9.5, 7.0] },
+      ]
+    : [
+        { n: 'TYPHOON',   c: '#ffb800', v: [7.5, 7.5, 8.5, 8.0, 7.5, 5.0] },
+        { n: 'F-35A',     c: '#7eb8f0', v: [6.5, 8.0, 9.5, 8.0, 7.0,10.0] },
+        { n: 'RAFALE F4', c: '#70e8a0', v: [9.0, 9.0, 9.0, 8.5, 7.5, 5.5] },
+        { n: 'GRIPEN E',  c: '#e870b8', v: [5.5, 6.0, 8.0, 7.5, 7.0, 5.5] },
+        { n: 'СУ-35С',    c: '#f07050', v: [9.0, 8.5, 7.0, 7.0, 8.0, 3.0] },
+      ];
+
+  return { axes, planes };
+}
+
+/**
+ * Отрисовка радарной диаграммы на canvas
+ * Draw radar chart on canvas
+ * @param {string} id - id элемента canvas / canvas element id
+ * @param {object} data - данные {axes, planes} / data {axes, planes}
+ */
+function drawRadar(id, data) {
+  const cv  = document.getElementById(id);
+  if (!cv) return;
+  const c   = cv.getContext('2d');
+  const W   = cv.width, H = cv.height;
+  const cx  = W / 2, cy = H / 2;
+  const R   = Math.min(W, H) / 2 - 54;  // Радиус до краёв / Radius to edges
+  const n   = data.axes.length;
+  const da  = (Math.PI * 2) / n;          // Угол между осями / Angle between axes
+
+  c.clearRect(0, 0, W, H);
+
+  /* Рисуем концентрические кольца сетки / Draw concentric grid rings */
+  for (let ring = 1; ring <= 5; ring++) {
+    const r = R * ring / 5;
+    c.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = i * da - Math.PI / 2;
+      i === 0
+        ? c.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
+        : c.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+    }
+    c.closePath();
+    c.strokeStyle = 'rgba(255,184,0,0.1)';
+    c.lineWidth   = 1;
+    c.stroke();
+  }
+
+  /* Рисуем оси / Draw axes */
+  for (let i = 0; i < n; i++) {
+    const a = i * da - Math.PI / 2;
+    c.beginPath();
+    c.moveTo(cx, cy);
+    c.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+    c.strokeStyle = 'rgba(255,184,0,0.18)';
+    c.lineWidth   = 1;
+    c.stroke();
+
+    /* Подписи осей / Axis labels */
+    const lx = cx + (R + 20) * Math.cos(a);
+    const ly = cy + (R + 20) * Math.sin(a);
+    c.fillStyle    = 'rgba(200,216,240,0.65)';
+    c.font         = '9px Share Tech Mono, monospace';
+    c.textAlign    = 'center';
+    c.textBaseline = 'middle';
+    c.fillText(data.axes[i], lx, ly);
+  }
+
+  /* Рисуем полигоны самолётов / Draw aircraft polygons */
+  data.planes.forEach(({ n: name, c: color, v: vals }) => {
+    c.beginPath();
+    vals.forEach((val, i) => {
+      const a  = i * da - Math.PI / 2;
+      const r  = R * val / 10;
+      const px = cx + r * Math.cos(a);
+      const py = cy + r * Math.sin(a);
+      i === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
+    });
+    c.closePath();
+    c.strokeStyle = color;
+    c.lineWidth   = 1.5;
+    c.stroke();
+    /* Полупрозрачная заливка / Semi-transparent fill */
+    c.fillStyle = color.replace('#', 'rgba(')
+      .replace(/([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})/i, (_, r, g, b) =>
+        `${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)},0.07)`);
+    c.fill();
+  });
+
+  /* Легенда / Legend */
+  data.planes.forEach(({ n: name, c: color }, idx) => {
+    const ly = 14 + idx * 15;
+    c.fillStyle = color;
+    c.fillRect(10, ly - 1, 14, 3);
+    c.fillStyle    = 'rgba(200,216,240,0.6)';
+    c.font         = '9px Share Tech Mono, monospace';
+    c.textAlign    = 'left';
+    c.textBaseline = 'middle';
+    c.fillText(name, 28, ly);
+  });
+}
+
+/* Первичная отрисовка диаграмм / Initial chart draw */
+setTimeout(() => {
+  drawRadar('radarAA', buildRadarData('aa', currentLang));
+  drawRadar('radarAG', buildRadarData('ag', currentLang));
+}, 200);
+
+/* ──────────────────────────────────────────────────────────────────
+   БЛОК 4: ВКЛАДКИ / BLOCK 4: TABS
+   Переключение между панелями ТТХ
+   Switching between specs panels
+   ────────────────────────────────────────────────────────────────── */
+
+/**
+ * Переключить активную вкладку / Switch active tab
+ * @param {string} id - идентификатор панели / panel id
+ * @param {HTMLElement} btn - нажатая кнопка / clicked button
+ */
+function switchTab(id, btn) {
+  /* Скрываем все панели / Hide all panels */
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  /* Убираем активный класс со всех кнопок / Remove active class from all buttons */
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  /* Активируем нужную панель и кнопку / Activate target panel and button */
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   БЛОК 5: АНИМАЦИЯ ПОЯВЛЕНИЯ ПРИ ПРОКРУТКЕ
+   BLOCK 5: SCROLL REVEAL ANIMATION
+   IntersectionObserver отслеживает видимость элементов
+   IntersectionObserver watches element visibility
+   ────────────────────────────────────────────────────────────────── */
+const scrollObserver = new IntersectionObserver(
+  entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  },
+  { threshold: 0.08 }
+);
+
+/* Подписываем все элементы с классом reveal
+   Subscribe all elements with class reveal */
+document.querySelectorAll('.reveal').forEach(el => scrollObserver.observe(el));
+
+/* ──────────────────────────────────────────────────────────────────
+   БЛОК 6: ИНИЦИАЛИЗАЦИЯ / BLOCK 6: INITIALIZATION
+   Устанавливаем язык по умолчанию после загрузки DOM
+   Set default language after DOM load
+   ────────────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  setLang('ru');  // Язык по умолчанию / Default language
+});
+
+</script>
+</body>
+</html>
